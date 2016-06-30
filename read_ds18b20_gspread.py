@@ -13,11 +13,14 @@ gc = gspread.authorize(credentials)
 
 _time=time.strftime('%H:%M')
 
+#open google sheets
 wks = gc.open_by_key('1V9OOICml3TB_kz-c6pKPEQZLdh8nlp5JI1Lb55njau8').sheet1
 sensors=['28.21CFCE010000','28.79C1CE010000','28.838ECE010000']
 values=[]
 row=1
 col=1
+
+#check first row to see if there is a header
 value=wks.cell(row,col).value
 if value=='':
   wks.update_cell(row,1,'time')
@@ -25,19 +28,23 @@ if value=='':
   wks.update_cell(row,3,sensors[1])
   wks.update_cell(row,4,sensors[2])
 
+#find which row is first empty
 while wks.cell(row,1).value!='':
   row=row+1
 
 owfspath='/var/1-wire/mnt/1F.BD5C08000000/aux/'
 
+#set time in row
 wks.update_cell(row,col,_time)
 col=col+1
 
+#write to simultaneous so all sensors do their conversion at the same time
+#all sensors in the bus need to be externally powered! Parasitic sensors can only convert one at a time!
 f=open(owfspath+'simultaneous/temperature','w')
 f.write('1')
 f.close()
 
-i=0
+#loop all sensors and put their values in a list
 for sensor in sensors:
   try:
     f=open(owfspath+sensor+'/temperature','r')
@@ -45,14 +52,11 @@ for sensor in sensors:
     valuef=float(value)
     sys.stdout.write('%0.4f, ' % (valuef))
     values.append(valuef)
-#    wks.update_cell(row,col,value)
-#    col=col+1
-#    sys.stderr.write("id=%i value='%s'\n" % (record[0],value))
-#    cursor.execute("INSERT INTO data (sensorid,time,value) VALUES (%s,now(), truncate(%s,2))",(record[0],value.lstrip()))
   except IOError:
     print "sensor not found ",owfspath+sensor
 print ''
 
+#write values to google sheet
 for value in values:
   wks.update_cell(row,col,'%0.4f' % (value))
   col=col+1
