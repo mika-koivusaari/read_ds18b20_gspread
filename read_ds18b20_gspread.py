@@ -3,6 +3,7 @@ import sys
 import time
 
 import gspread
+from gspread.exceptions import WorksheetNotFound
 from oauth2client.service_account import ServiceAccountCredentials
 
 scope = ['https://spreadsheets.google.com/feeds']
@@ -12,9 +13,16 @@ credentials = ServiceAccountCredentials.from_json_keyfile_name('solar shield dat
 gc = gspread.authorize(credentials)
 
 _time=time.strftime('%H:%M')
+_date=time.strftime('%d.%m')
 
 #open google sheets
-wks = gc.open_by_key('1V9OOICml3TB_kz-c6pKPEQZLdh8nlp5JI1Lb55njau8').sheet1
+sheet = gc.open_by_key('1V9OOICml3TB_kz-c6pKPEQZLdh8nlp5JI1Lb55njau8')
+#try to open todays sheet, if not succesfull then create it 
+try:
+  wks=sheet.worksheet(_date)
+except WorksheetNotFound:
+  wks=sheet.add_worksheet(title=_date, rows="1441", cols="5")
+
 sensors=['28.21CFCE010000','28.79C1CE010000','28.838ECE010000']
 values=[]
 row=1
@@ -50,11 +58,11 @@ for sensor in sensors:
     f=open(owfspath+sensor+'/temperature','r')
     value=f.readline()
     valuef=float(value)
-    sys.stdout.write('%0.4f, ' % (valuef))
+#    sys.stdout.write('%0.4f, ' % (valuef))
     values.append(valuef)
   except IOError:
     print "sensor not found ",owfspath+sensor
-print ''
+#print ''
 
 #write values to google sheet
 for value in values:
