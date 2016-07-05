@@ -56,6 +56,7 @@ row=1
 col=1
 
 #add header
+print "Add header."
 wks.update_cell(row,1,'time')
 wks.update_cell(row,2,sensors[0])
 wks.update_cell(row,3,sensors[1])
@@ -63,13 +64,40 @@ wks.update_cell(row,4,sensors[2])
 
 row=row+1
 
-for csvrow in csvreader:
-  #set time in row
-  wks.update_cell(row,1,csvrow[0])
-  wks.update_cell(row,2,csvrow[1])
-  wks.update_cell(row,3,csvrow[2])
-  wks.update_cell(row,4,csvrow[3])
+#find the first empty row
+print "Find first empty row."
+while wks.cell(row,1).value != "":
   row=row+1
+if row>2:
+  row=row-1
+last_time=wks.cell(row,1).value
+print "First empty row is "+str(row)+" with value "+last_time
+
+write_data=False
+
+#Worksheet is new, start from beginning
+if last_time=="":
+  write_data=True
+
+for csvrow in csvreader:
+  if last_time==csvrow[0]:
+    write_data=True;
+    print "Found place in CSV file."
+  if write_data:
+    cells=wks.range('A'+str(row)+':D'+str(row))
+
+    #set time in row
+    cells[0].value=csvrow[0]
+    cells[1].value=csvrow[1]
+    cells[2].value=csvrow[2]
+    cells[3].value=csvrow[3]
+    #update all values at once
+    wks.update_cells(cells)
+    #wks.update_cell(row,1,csvrow[0])
+    #wks.update_cell(row,2,csvrow[1])
+    #wks.update_cell(row,3,csvrow[2])
+    #wks.update_cell(row,4,csvrow[3])
+    row=row+1
 
 csvfile.close()
 
